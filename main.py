@@ -13,7 +13,7 @@ def start_game():
 
     x_delta, y_delta = (0, 0)
 
-    snake_tail = list()
+    snake = list()
     snake_len = 1
 
     food_x = random.randrange(0, display_width // snake_size - 1) * snake_size
@@ -47,16 +47,31 @@ def start_game():
             game_over = True
 
         display.fill(green)
-        pygame.draw.rect(display, blue, [head_x, head_y, snake_size, snake_size])
         pygame.draw.rect(display, red, [food_x, food_y, snake_size, snake_size])
+
+        snake.append([head_x, head_y])
+
+        if len(snake) > snake_len:
+            del snake[0]
+        for i in snake[:-1]:
+            if i == snake[-1]:
+                game_over = True
+
+        for i in snake:
+            pygame.draw.rect(display, blue, [i[0], i[1], snake_size, snake_size])
+
+        f1 = pygame.font.Font('digitalcyrillic1.otf', 36)
+        text1 = f1.render(str(snake_len - 1), 1, black)
+        display.blit(text1,(3, 3))
+
         pygame.display.update()
 
         if abs(head_x - food_x) < snake_size and abs(head_y - food_y) < snake_size:
-            print('food was eaten')
-            food_x = round(random.randrange(0, display_width - snake_size) / 10.0) * 10.0
-            food_y = round(random.randrange(0, display_height - snake_size) / 10.0) * 10.0
+            food_x = random.randrange(0, display_width // snake_size - 1) * snake_size
+            food_y = random.randrange(0, display_height // snake_size - 1) * snake_size
+            snake_len += 1
 
-        clock.tick(60)
+        clock.tick(15)
 
     pygame.quit()
     quit()
@@ -66,14 +81,15 @@ pygame.init()
 red = (255, 0, 0)
 green = (0, 255, 0)
 blue = (0, 0, 255)
+black = (0, 0, 0)
 
 display_width = 800
 display_height = 600
 display = pygame.display.set_mode((display_width, display_height))
 pygame.display.set_caption('Snake')
 
-snake_speed = 2.5
-snake_size = 10
+snake_speed = 20
+snake_size = 20
 TURN_LEFT = (-snake_speed, 0)
 TURN_RIGHT = (snake_speed, 0)
 TURN_UP = (0, -snake_speed)
