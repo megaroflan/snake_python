@@ -10,9 +10,9 @@ class Food:
     type: str
 
 
-food_types = ['length+1', 'length-1', 'speed+4', 'speed-4', 'points+3', 'points+5']
+food_types = ['length+1', 'length-1', 'speed+3', 'speed-3', 'points+3', 'points+5']
 food_colors = {'length+1': (255, 0, 0), 'length-1': (255, 255, 0),
-               'speed+4': (139, 0, 255), 'speed-4': (255, 192, 203),
+               'speed+3': (139, 0, 255), 'speed-3': (255, 192, 203),
                'points+3': (255, 0, 0), 'points+5': (255, 0, 0)}
 
 
@@ -95,11 +95,11 @@ def start_game():
                     snake_len += 1
                 case 'length-1':
                     snake_len -= 1
-                case 'speed+4':
+                case 'speed+3':
                     if fps != 60:
                         fps += 3
                     snake_len += 1
-                case 'speed-4':
+                case 'speed-3':
                     if fps != 3:
                         fps -= 3
                     snake_len += 1
