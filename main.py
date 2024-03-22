@@ -1,5 +1,25 @@
 import pygame
 import random
+from dataclasses import dataclass
+
+
+@dataclass
+class Food:
+    x: int
+    y: int
+    type: str
+
+
+food_types = ['length+1', 'length-1', 'speed+4', 'speed-4', 'points+3', 'points+5']
+food_colors = {'length+1': (255, 0, 0), 'length-1': (255, 255, 0),
+               'speed+4': (139, 0, 255), 'speed-4': (255, 192, 203),
+               'points+3': (255, 0, 0), 'points+5': (255, 0, 0)}
+
+
+def display_score(snake_len: int, add_score: int) -> None:
+    f1 = pygame.font.Font(None, 36)
+    text1 = f1.render(str(snake_len - 1 + add_score), 1, black)
+    display.blit(text1, (3, 3))
 
 
 def out_of_border(x: int, y: int) -> bool:
@@ -8,16 +28,21 @@ def out_of_border(x: int, y: int) -> bool:
     return True
 
 
-def start_game():
-    head_x, head_y = (300, 300)
+def random_coordinates() -> (int, int):
+    return random.randint(0, display_width // snake_size - 1) * snake_size, \
+           random.randint(0, display_height // snake_size - 1) * snake_size
 
+
+def start_game():
+    head_x, head_y = (display_width // 2, display_height // 2)
     x_delta, y_delta = (0, 0)
 
     snake = list()
     snake_len = 1
+    add_score = 0
+    fps = 15
 
-    food_x = random.randrange(0, display_width // snake_size - 1) * snake_size
-    food_y = random.randrange(0, display_height // snake_size - 1) * snake_size
+    food = Food(*random_coordinates(), random.choice(food_types))
 
     game_over = False
     while not game_over:
@@ -28,17 +53,17 @@ def start_game():
                 case pygame.KEYDOWN:
                     match event.key:
                         case pygame.K_LEFT:
-                            if (x_delta, y_delta) != TURN_RIGHT:
-                                x_delta, y_delta = TURN_LEFT
+                            if (x_delta, y_delta) != (snake_speed, 0):
+                                x_delta, y_delta = (-snake_speed, 0)
                         case pygame.K_RIGHT:
-                            if (x_delta, y_delta) != TURN_LEFT:
-                                x_delta, y_delta = TURN_RIGHT
+                            if (x_delta, y_delta) != (-snake_speed, 0):
+                                x_delta, y_delta = (snake_speed, 0)
                         case pygame.K_UP:
-                            if (x_delta, y_delta) != TURN_DOWN:
-                                x_delta, y_delta = TURN_UP
+                            if (x_delta, y_delta) != (0, snake_speed):
+                                x_delta, y_delta = (0, -snake_speed)
                         case pygame.K_DOWN:
-                            if (x_delta, y_delta) != TURN_UP:
-                                x_delta, y_delta = TURN_DOWN
+                            if (x_delta, y_delta) != (0, -snake_speed):
+                                x_delta, y_delta = (0, snake_speed)
 
         head_x += x_delta
         head_y += y_delta
@@ -47,11 +72,12 @@ def start_game():
             game_over = True
 
         display.fill(green)
-        pygame.draw.rect(display, red, [food_x, food_y, snake_size, snake_size])
+        pygame.draw.rect(display, food_colors[food.type],
+                         [food.x, food.y, snake_size, snake_size])
 
         snake.append([head_x, head_y])
 
-        if len(snake) > snake_len:
+        while len(snake) > snake_len:
             del snake[0]
         for i in snake[:-1]:
             if i == snake[-1]:
@@ -60,40 +86,54 @@ def start_game():
         for i in snake:
             pygame.draw.rect(display, blue, [i[0], i[1], snake_size, snake_size])
 
-        f1 = pygame.font.Font('digitalcyrillic1.otf', 36)
-        text1 = f1.render(str(snake_len - 1), 1, black)
-        display.blit(text1,(3, 3))
-
+        display_score(snake_len, add_score)
         pygame.display.update()
 
-        if abs(head_x - food_x) < snake_size and abs(head_y - food_y) < snake_size:
-            food_x = random.randrange(0, display_width // snake_size - 1) * snake_size
-            food_y = random.randrange(0, display_height // snake_size - 1) * snake_size
-            snake_len += 1
-
-        clock.tick(15)
+        if abs(head_x - food.x) < snake_size and abs(head_y - food.y) < snake_size:
+            match food.type:
+                case 'length+1':
+                    snake_len += 1
+                case 'length-1':
+                    snake_len -= 1
+                case 'speed+4':
+                    if fps != 60:
+                        fps += 3
+                    snake_len += 1
+                case 'speed-4':
+                    if fps != 3:
+                        fps -= 3
+                    snake_len += 1
+                case 'points+3':
+                    add_score += 2
+                    snake_len += 1
+                case 'points+5':
+                    add_score += 4
+                    snake_len += 1
+            food = Food(*random_coordinates(), random.choice(food_types))
+            while [food.x, food.y] in snake:
+                food = Food(*random_coordinates(), random.choice(food_types))
+        clock.tick(fps)
 
     pygame.quit()
     quit()
 
 
-pygame.init()
+snake_speed = 20
+snake_size = 20
 red = (255, 0, 0)
 green = (0, 255, 0)
 blue = (0, 0, 255)
 black = (0, 0, 0)
+yellow = (255, 255, 0)
+purple = (139, 0, 255)
+pink = (255, 192, 203)
+
+pygame.init()
 
 display_width = 800
 display_height = 600
 display = pygame.display.set_mode((display_width, display_height))
 pygame.display.set_caption('Snake')
-
-snake_speed = 20
-snake_size = 20
-TURN_LEFT = (-snake_speed, 0)
-TURN_RIGHT = (snake_speed, 0)
-TURN_UP = (0, -snake_speed)
-TURN_DOWN = (0, snake_speed)
 
 clock = pygame.time.Clock()
 
