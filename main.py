@@ -2,6 +2,7 @@ import pygame
 import random
 from food import *
 from snake import *
+from levels import *
 
 
 def display_score(snake_len: int, add_score: int, lives: int) -> None:
@@ -32,6 +33,8 @@ def start_game():
 
     food = Food(*random_coordinates(), random.choice(food_types))
 
+    current_level_num = 0
+    current_level = levels[current_level_num]
     lives = 3
     while lives > 0:
         for event in pygame.event.get():
@@ -56,13 +59,21 @@ def start_game():
 
         while len(snake_tail) > snake.snake_len:
             del snake_tail[0]
+
         for i in snake_tail[:-1]:
             if i == snake_tail[-1]:
                 lives -= 1
                 snake = Snake(display_width // 2, display_height // 2)
 
+        if [snake.head_x, snake.head_y] in current_level:
+            lives -= 1
+            snake = Snake(display_width // 2, display_height // 2)
+
         for i in snake_tail:
             pygame.draw.rect(display, blue, [i[0], i[1], snake_size, snake_size])
+
+        for i in current_level.blocks:
+            pygame.draw.rect(display, dark_grey, [i[0], i[1], snake_size, snake_size])
 
         display_score(snake.snake_len, snake.add_score, lives)
         pygame.display.update()
@@ -70,8 +81,13 @@ def start_game():
         if abs(snake.head_x - food.x) < snake_size and abs(snake.head_y - food.y) < snake_size:
             snake.eat_food(food.type)
             food = Food(*random_coordinates(), random.choice(food_types))
-            while [food.x, food.y] in snake_tail:
+            while [food.x, food.y] in snake_tail or [food.x, food.y] in current_level:
                 food = Food(*random_coordinates(), random.choice(food_types))
+
+        if snake.snake_len + snake.add_score >= 30:
+            current_level_num = (current_level_num + 1) % 2
+            current_level = levels[current_level_num]
+            snake = Snake(display_width // 2, display_height // 2)
         clock.tick(snake.fps)
 
     pygame.quit()
@@ -87,6 +103,8 @@ black = (0, 0, 0)
 yellow = (255, 255, 0)
 purple = (139, 0, 255)
 pink = (255, 192, 203)
+dark_grey = (71, 64, 64)
+WindowClose = 32787
 
 pygame.init()
 
