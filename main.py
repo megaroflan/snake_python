@@ -4,14 +4,16 @@ from food import *
 from snake import *
 from levels import *
 import pygame_menu
+from portal import *
 
-
-def display_score(snake_len: int, add_score: int, lives: int) -> None:
+def display_score(snake_len: int, add_score: int, lives: int, speed: int) -> None:
     f1 = pygame.font.Font(None, 24)
     text1 = f1.render(f'Score: {snake_len - 1 + add_score}', 1, black)
     text2 = f1.render(f'Lives: {lives}', 1, red)
+    text3 = f1.render(f'Speed: {speed}', 1, black)
     display.blit(text1, (3, 3))
     display.blit(text2, (6, 20))
+    display.blit(text3, (720, 3))
 
 
 def out_of_border(x: int, y: int) -> bool:
@@ -32,12 +34,18 @@ def start_game():
     snake.snake_len = 1
     snake.add_score = 0
     snake.fps = 15
+    on_pause = 0
 
-    food = Food(*random_coordinates(), random.choice(food_types))
-    while snake.snake_len == 1 and food.type == 'length-1':
-        food = Food(*random_coordinates(), random.choice(food_types))
     current_level_num = 0
     current_level = levels[current_level_num]
+
+    food = Food(*random_coordinates(), random.choice(food_types))
+    while snake.snake_len == 1 and food.type == 'length-1' or [food.x, food.y] in current_level:
+        food = Food(*random_coordinates(), random.choice(food_types))
+
+    portals = [Portal(*random_coordinates(), (255, 154, 0)),
+               Portal(*random_coordinates(), (39, 167, 216))]
+
     lives = 3
     while lives > 0:
         for event in pygame.event.get():
@@ -45,21 +53,34 @@ def start_game():
                 case pygame.QUIT:
                     lives = 0
                 case pygame.KEYDOWN:
-                    snake.change_direction(event.key)
+                    if event.key == pygame.K_ESCAPE:
+                        lives = 0
+                    elif event.key == pygame.K_p:
+                        on_pause = (on_pause + 1) % 2
+                    if not on_pause:
+                        snake.change_direction(event.key)
 
-        snake.head_x += snake.x_delta
-        snake.head_y += snake.y_delta
+        if not on_pause:
+            snake.head_x += snake.x_delta
+            snake.head_y += snake.y_delta
+            snake_tail.append([snake.head_x, snake.head_y])
 
         if out_of_border(snake.head_x, snake.head_y):
             lives -= 1
             best_score = max(best_score, snake.snake_len - 1 + snake.add_score)
             snake = Snake(display_width // 2, display_height // 2)
+            while snake.snake_len == 1 and food.type == 'length-1' or [food.x, food.y] in current_level:
+                food = Food(*random_coordinates(), random.choice(food_types))
 
         display.fill(green)
+        pygame.draw.ellipse(display, portals[0].color, [portals[0].x - 5, portals[0].y - 5, 30, 30])
+        pygame.draw.ellipse(display, portals[1].color, [portals[1].x - 5, portals[1].y - 5, 30, 30])
+
+        pygame.draw.ellipse(display, black, [portals[0].x, portals[0].y, snake_size, snake_size])
+        pygame.draw.ellipse(display, black, [portals[1].x, portals[1].y, snake_size, snake_size])
+
         pygame.draw.rect(display, food_colors[food.type],
                          [food.x, food.y, snake_size, snake_size])
-
-        snake_tail.append([snake.head_x, snake.head_y])
 
         while len(snake_tail) > snake.snake_len:
             del snake_tail[0]
@@ -69,6 +90,8 @@ def start_game():
                 lives -= 1
                 best_score = max(best_score, snake.snake_len - 1 + snake.add_score)
                 snake = Snake(display_width // 2, display_height // 2)
+                while snake.snake_len == 1 and food.type == 'length-1' or [food.x, food.y] in current_level:
+                    food = Food(*random_coordinates(), random.choice(food_types))
 
         if [snake.head_x, snake.head_y] in current_level:
             lives -= 1
@@ -81,21 +104,28 @@ def start_game():
         for i in current_level.blocks:
             pygame.draw.rect(display, dark_grey, [i[0], i[1], snake_size, snake_size])
 
-        display_score(snake.snake_len, snake.add_score, lives)
+        display_score(snake.snake_len, snake.add_score, lives, snake.fps // 3)
         pygame.display.update()
 
         if abs(snake.head_x - food.x) < snake_size and abs(snake.head_y - food.y) < snake_size:
             snake.eat_food(food.type)
             food = Food(*random_coordinates(), random.choice(food_types))
-            while [food.x, food.y] in snake_tail or [food.x, food.y] in current_level:
+            while [food.x, food.y] in snake_tail or \
+                    [food.x,food.y] in current_level or snake.snake_len == 1 and food.type == 'length-1':
                 food = Food(*random_coordinates(), random.choice(food_types))
-                while snake.snake_len == 1 and food.type == 'length-1':
-                    food = Food(*random_coordinates(), random.choice(food_types))
         if snake.snake_len + snake.add_score >= 30:
-            current_level_num = (current_level_num + 1) % 2
+            current_level_num = (current_level_num + 1) % 3
             current_level = levels[current_level_num]
             best_score += snake.snake_len - 1 + snake.add_score
             snake = Snake(display_width // 2, display_height // 2)
+            portals = [Portal(*random_coordinates(), (255, 154, 0)),
+                       Portal(*random_coordinates(), (39, 167, 216))]
+        if abs(snake.head_x - portals[0].x) < snake_size and abs(snake.head_y - portals[0].y) < snake_size:
+            snake.head_x = portals[1].x
+            snake.head_y = portals[1].y
+        elif abs(snake.head_x - portals[1].x) < snake_size and abs(snake.head_y - portals[1].y) < snake_size:
+            snake.head_x = portals[0].x
+            snake.head_y = portals[0].y
         clock.tick(snake.fps)
     best_score += snake.snake_len - 1 + snake.add_score
     menu.disable()
@@ -104,11 +134,6 @@ def start_game():
     menu.add.button('Play', start_game)
     menu.add.button('Quit', pygame_menu.events.EXIT)
     menu.enable()
-    # lose_menu = pygame_menu.Menu('You lost', 800, 600,
-    #                              theme=pygame_menu.themes.THEME_GREEN)
-    # lose_menu.add.button('Quit', action=lambda: menu.mainloop(display))
-    # lose_menu.mainloop()
-    # pygame.quit()
 
 
 snake_speed = 20
@@ -139,4 +164,3 @@ menu.add.button('Play', start_game)
 menu.add.button('Quit', pygame_menu.events.EXIT)
 clock = pygame.time.Clock()
 menu.mainloop(display)
-
