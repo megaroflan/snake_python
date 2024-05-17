@@ -13,6 +13,9 @@ class Snake:
     fps: int = 15
 
     def eat_food(self, food_type: str):
+        eat_sound = pygame.mixer.Sound('eat.mp3')
+        eat_sound.set_volume(0.25)
+        eat_sound.play()
         match food_type:
             case 'length+1':
                 self.snake_len += 1

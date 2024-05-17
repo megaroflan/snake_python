@@ -6,6 +6,7 @@ from levels import *
 import pygame_menu
 from portal import *
 
+
 def display_score(snake_len: int, add_score: int, lives: int, speed: int) -> None:
     f1 = pygame.font.Font(None, 24)
     text1 = f1.render(f'Score: {snake_len - 1 + add_score}', 1, black)
@@ -35,6 +36,8 @@ def start_game():
     snake.add_score = 0
     snake.fps = 15
     on_pause = 0
+    portal_sound = pygame.mixer.Sound('portal.mp3')
+    portal_sound.set_volume(0.25)
 
     current_level_num = 0
     current_level = levels[current_level_num]
@@ -45,6 +48,11 @@ def start_game():
 
     portals = [Portal(*random_coordinates(), (255, 154, 0)),
                Portal(*random_coordinates(), (39, 167, 216))]
+    while [portals[0].x, portals[0].y] in current_level:
+        portals[0] = Portal(*random_coordinates(), (255, 154, 0))
+
+    while [portals[1].x, portals[1].y] in current_level:
+        portals[1] = Portal(*random_coordinates(), (255, 154, 0))
 
     lives = 3
     while lives > 0:
@@ -111,7 +119,7 @@ def start_game():
             snake.eat_food(food.type)
             food = Food(*random_coordinates(), random.choice(food_types))
             while [food.x, food.y] in snake_tail or \
-                    [food.x,food.y] in current_level or snake.snake_len == 1 and food.type == 'length-1':
+                    [food.x, food.y] in current_level or snake.snake_len == 1 and food.type == 'length-1':
                 food = Food(*random_coordinates(), random.choice(food_types))
         if snake.snake_len + snake.add_score >= 30:
             current_level_num = (current_level_num + 1) % 3
@@ -120,12 +128,19 @@ def start_game():
             snake = Snake(display_width // 2, display_height // 2)
             portals = [Portal(*random_coordinates(), (255, 154, 0)),
                        Portal(*random_coordinates(), (39, 167, 216))]
+            while [portals[0].x, portals[0].y] in current_level:
+                portals[0] = Portal(*random_coordinates(), (255, 154, 0))
+
+            while [portals[1].x, portals[1].y] in current_level:
+                portals[1] = Portal(*random_coordinates(), (255, 154, 0))
         if abs(snake.head_x - portals[0].x) < snake_size and abs(snake.head_y - portals[0].y) < snake_size:
             snake.head_x = portals[1].x
             snake.head_y = portals[1].y
+            portal_sound.play()
         elif abs(snake.head_x - portals[1].x) < snake_size and abs(snake.head_y - portals[1].y) < snake_size:
             snake.head_x = portals[0].x
             snake.head_y = portals[0].y
+            portal_sound.play()
         clock.tick(snake.fps)
     best_score += snake.snake_len - 1 + snake.add_score
     menu.disable()
@@ -158,9 +173,11 @@ pygame.display.set_caption('Snake')
 
 menu = pygame_menu.Menu('Snake', 800, 600,
                         theme=pygame_menu.themes.THEME_GREEN)
-
 menu.add.label(f'Your score: {best_score}')
 menu.add.button('Play', start_game)
 menu.add.button('Quit', pygame_menu.events.EXIT)
 clock = pygame.time.Clock()
+pygame.mixer.music.load('guts_theme.mp3')
+pygame.mixer.music.play(-1)
+pygame.mixer.music.set_volume(0.1)
 menu.mainloop(display)
